@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Battle - Завдання</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-content">
+        <h1 class="nav-title">⚔️ TASK BATTLE</h1>
+        <div class="nav-links">
+            <button class="nav-btn active" data-page="tasks">Завдання</button>
+            <button class="nav-btn" data-page="challenges">Виставлені Завдання</button>
+            <button class="nav-btn" data-page="leaderboard">Рейтинг</button>
+            <button class="nav-btn" data-page="profile">Профіль</button>
+            <button class="nav-btn" id="logoutBtn">Вихід</button>
+        </div>
+    </div>
+</nav>
+
+<div class="dashboard-container">
+    <!-- Tasks Section -->
+    <div id="tasksSection" class="section">
+        <h2>Завдання для розв'язання</h2>
+        <div class="section-controls">
+            <button class="btn btn-secondary" id="createTaskBtn">+ Створити Завдання</button>
+        </div>
+        <div id="tasksList" class="tasks-list"></div>
+    </div>
+
+    <!-- Challenges Section -->
+    <div id="challengesSection" class="section hidden">
+        <h2>Виставлені Завдання</h2>
+        <div id="challengesList" class="challenges-list"></div>
+    </div>
+
+    <!-- Leaderboard Section -->
+    <div id="leaderboardSection" class="section hidden">
+        <h2>Топ Гравців</h2>
+        <div id="leaderboardList" class="leaderboard-list"></div>
+    </div>
+
+    <!-- Profile Section -->
+    <div id="profileSection" class="section hidden">
+        <h2>Мій Профіль</h2>
+        <div id="profileContent" class="profile-content"></div>
+    </div>
+</div>
+
+<!-- Create Task Modal -->
+<div id="createTaskModal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Створити Завдання</h2>
+            <button type="button" class="close-modal">&times;</button>
+        </div>
+        <form id="createTaskForm">
+            <div class="form-group">
+                <label>Назва Завдання:</label>
+                <input type="text" id="taskTitle" required>
+            </div>
+            <div class="form-group">
+                <label>Опис Завдання:</label>
+                <textarea id="taskDescription" rows="4" required placeholder="Напишіть, що потрібно зробити..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Правильний Код (відповідь):</label>
+                <textarea id="taskCode" rows="6" required placeholder="Напишіть правильний код..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Складність:</label>
+                <select id="taskDifficulty">
+                    <option value="easy">Легка</option>
+                    <option value="medium" selected>Середня</option>
+                    <option value="hard">Складна</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Створити</button>
+        </form>
+    </div>
+</div>
+
+<!-- Post Challenge Modal -->
+<div id="postChallengeModal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Виставити Завдання на Виконання</h2>
+            <button type="button" class="close-modal">&times;</button>
+        </div>
+        <form id="postChallengeForm">
+            <div class="form-group">
+                <label>Виберіть Завдання:</label>
+                <select id="challengeTaskSelect" required>
+                    <option value="">-- Завантаження завдань --</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Опис Виклику (опціонально):</label>
+                <textarea id="challengeDescription" rows="3" placeholder="Напишіть щось про цей виклик..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Приз за правильне рішення (очки):</label>
+                <input type="number" id="challengePrize" value="10" min="1" max="100">
+            </div>
+            <button type="submit" class="btn btn-primary">Виставити</button>
+        </form>
+    </div>
+</div>
+
+<!-- Solve Task Modal -->
+<div id="solveTaskModal" class="modal hidden">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h2 id="solveTaskTitle">Розв'яжи Завдання</h2>
+            <button type="button" class="close-modal">&times;</button>
+        </div>
+        <div class="solve-task">
+            <div class="task-description">
+                <h3>Опис</h3>
+                <div id="solveTaskDesc" class="task-text"></div>
+            </div>
+            <div class="task-editor">
+                <div class="editor-header">
+                    <h3>Твій Код</h3>
+                    <button type="button" class="btn btn-small" id="submitSolutionBtn">Перевірити</button>
+                </div>
+                <textarea id="solutionCode" placeholder="Напиши код тут..."></textarea>
+            </div>
+            <div id="resultMessage" class="result-message"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>
