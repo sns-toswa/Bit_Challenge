@@ -3,23 +3,16 @@ const API_URL = '/api';
 
 let currentUser = null;
 let currentTask = null;
+let completedTaskIds = JSON.parse(localStorage.getItem('completedTasks') || '[]');
 
 async function apiCall(method, endpoint, data = null) {
     const options = {
         method,
-        headers: {
-            'Content-Type': 'application/json',
-        }
+        headers: { 'Content-Type': 'application/json' }
     };
-
     const token = localStorage.getItem('token');
-    if (token) {
-        options.headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    if (data) {
-        options.body = JSON.stringify(data);
-    }
+    if (token) options.headers['Authorization'] = `Bearer ${token}`;
+    if (data) options.body = JSON.stringify(data);
 
     const response = await fetch(API_URL + endpoint, options);
     if (!response.ok) {
@@ -29,16 +22,10 @@ async function apiCall(method, endpoint, data = null) {
     return await response.json();
 }
 
-// Check auth and load user
 function checkAuth() {
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
-
-    if (!token || !user) {
-        window.location.href = 'auth.html';
-        return false;
-    }
-
+    if (!token || !user) { window.location.href = 'auth.html'; return false; }
     currentUser = JSON.parse(user);
     return true;
 }
@@ -52,19 +39,14 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
             window.location.href = 'auth.html';
             return;
         }
-
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         e.target.classList.add('active');
-
         const page = e.target.dataset.page;
         document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
 
         if (page === 'tasks') {
             document.getElementById('tasksSection').classList.remove('hidden');
             loadTasks();
-        } else if (page === 'challenges') {
-            document.getElementById('challengesSection').classList.remove('hidden');
-            loadChallenges();
         } else if (page === 'leaderboard') {
             document.getElementById('leaderboardSection').classList.remove('hidden');
             loadLeaderboard();
@@ -75,23 +57,23 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     });
 });
 
-// Load tasks
+// Load tasks — фільтруємо вже виконані
 async function loadTasks() {
     try {
         const tasks = await apiCall('GET', '/tasks');
         const tasksList = document.getElementById('tasksList');
+        const available = tasks.filter(t => !completedTaskIds.includes(t.id));
 
-        if (tasks.length === 0) {
+        if (available.length === 0) {
             tasksList.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">Немає доступних завдань</p>';
             return;
         }
 
-        tasksList.innerHTML = tasks.map(task => `
-            <div class="task-card">
+        tasksList.innerHTML = available.map(task => `
+            <div class="task-card" id="task-card-${task.id}">
                 <div class="task-card-header">
                     <div class="task-card-title">${task.title}</div>
                     <div class="task-card-actions">
-                        <button class="btn btn-small btn-warning" onclick="openPostChallenge(${task.id})">📢 Виставити</button>
                         ${task.creatorId === currentUser.id ? `
                             <button class="btn btn-small btn-danger" onclick="deleteTask(${task.id})">Видалити</button>
                         ` : ''}
@@ -107,50 +89,11 @@ async function loadTasks() {
                         <span class="task-difficulty difficulty-${task.difficulty}">${task.difficulty}</span>
                     </div>
                 </div>
-                <button class="btn btn-small" onclick="openSolveTask(${task.id}, '${task.title}', '${task.description.replace(/'/g, "\\'")}')">Розв'язати</button>
+                <button class="btn btn-small" onclick="openSolveTask(${task.id}, '${task.title.replace(/'/g, "\\'")}', '${task.description.replace(/'/g, "\\'")}')">Розв'язати</button>
             </div>
         `).join('');
     } catch (error) {
         console.error('Error loading tasks:', error);
-    }
-}
-
-// Load challenges
-async function loadChallenges() {
-    try {
-        const challenges = await apiCall('GET', '/challenges');
-        const challengesList = document.getElementById('challengesList');
-
-        if (challenges.length === 0) {
-            challengesList.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">Немає активних виклик</p>';
-            return;
-        }
-
-        challengesList.innerHTML = challenges.map(challenge => `
-            <div class="challenge-card">
-                <div class="challenge-card-header">
-                    <div class="challenge-card-title">${challenge.taskTitle}</div>
-                    <div class="challenge-card-actions">
-                        <span class="challenge-status">${challenge.status}</span>
-                        <span class="challenge-prize">⭐ +${challenge.prize}</span>
-                    </div>
-                </div>
-                <div class="challenge-card-info">
-                    <div class="task-card-info-item">
-                        <span class="task-card-info-label">Автор:</span>
-                        <span class="task-card-info-value">${challenge.creatorUsername}</span>
-                    </div>
-                    <div class="task-card-info-item">
-                        <span class="task-card-info-label">Дата:</span>
-                        <span class="task-card-info-value">${new Date(challenge.createdAt).toLocaleDateString('uk-UA')}</span>
-                    </div>
-                </div>
-                ${challenge.description ? `<p style="margin-top: 10px; font-size: 0.95rem; color: #555;">${challenge.description}</p>` : ''}
-                <button class="btn btn-small" onclick="openSolveTask(${challenge.taskId}, '${challenge.taskTitle}', '${challenge.taskDescription.replace(/'/g, "\\'")}', true, ${challenge.prize})">Спробувати</button>
-            </div>
-        `).join('');
-    } catch (error) {
-        console.error('Error loading challenges:', error);
     }
 }
 
@@ -159,7 +102,6 @@ async function deleteTask(taskId) {
     if (confirm('Ви впевнені? Це завдання буде видалено назавжди.')) {
         try {
             await apiCall('DELETE', `/tasks/${taskId}`);
-            alert('Завдання видалено!');
             loadTasks();
         } catch (error) {
             alert('Помилка: ' + error.message);
@@ -167,44 +109,10 @@ async function deleteTask(taskId) {
     }
 }
 
-// Open post challenge modal
-function openPostChallenge(taskId) {
-    const task = { id: taskId };
-    document.getElementById('challengeTaskSelect').value = taskId;
-    document.getElementById('challengeDescription').value = '';
-    document.getElementById('challengePrize').value = 10;
-    document.getElementById('postChallengeModal').classList.remove('hidden');
-}
-
-// Post challenge
-document.getElementById('postChallengeForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const taskId = parseInt(document.getElementById('challengeTaskSelect').value);
-    const description = document.getElementById('challengeDescription').value;
-    const prize = parseInt(document.getElementById('challengePrize').value);
-
-    try {
-        await apiCall('POST', '/challenges', {
-            taskId,
-            description,
-            prize,
-            creatorId: currentUser.id
-        });
-
-        document.getElementById('postChallengeForm').reset();
-        document.getElementById('postChallengeModal').classList.add('hidden');
-        alert('Виклик виставлено!');
-        loadTasks();
-    } catch (error) {
-        alert('Помилка: ' + error.message);
-    }
-});
-
 // Open solve task modal
-function openSolveTask(taskId, title, description, isChallenge = false, prize = 0) {
-    currentTask = { id: taskId, title, description, isChallenge, prize };
-    document.getElementById('solveTaskTitle').textContent = isChallenge ? `${title} (⭐ +${prize})` : title;
+function openSolveTask(taskId, title, description) {
+    currentTask = { id: taskId, title, description };
+    document.getElementById('solveTaskTitle').textContent = title;
     document.getElementById('solveTaskDesc').textContent = description;
     document.getElementById('solutionCode').value = '';
     document.getElementById('resultMessage').className = 'result-message';
@@ -215,36 +123,36 @@ function openSolveTask(taskId, title, description, isChallenge = false, prize = 
 // Submit solution
 document.getElementById('submitSolutionBtn').addEventListener('click', async () => {
     const code = document.getElementById('solutionCode').value.trim();
-
-    if (!code) {
-        showResult('Напиши код!', 'error');
-        return;
-    }
+    if (!code) { showResult('Напиши код!', 'error'); return; }
 
     try {
         const task = await apiCall('GET', `/tasks/${currentTask.id}`);
 
         if (code === task.correctCode.trim()) {
-            const prizePoints = currentTask.isChallenge ? currentTask.prize : 10;
-            showResult(`✅ Правильно! Завдання виконано! +${prizePoints} очків`, 'success');
+            showResult('✅ Правильно! Завдання виконано! +10 очків', 'success');
 
-            // Update user profile
-            await apiCall('POST', `/submit-solution`, {
+            await apiCall('POST', '/submit-solution', {
                 taskId: currentTask.id,
                 userId: currentUser.id,
                 code: code,
-                prize: prizePoints
+                prize: 10
             });
 
-            // Update local storage
+            // Зберігаємо виконане завдання локально
+            completedTaskIds.push(currentTask.id);
+            localStorage.setItem('completedTasks', JSON.stringify(completedTaskIds));
+
+            // Оновлюємо юзера в localStorage
             currentUser.tasksCompleted = (currentUser.tasksCompleted || 0) + 1;
-            currentUser.rating = (currentUser.rating || 0) + prizePoints;
+            currentUser.rating = (currentUser.rating || 0) + 10;
             localStorage.setItem('user', JSON.stringify(currentUser));
 
             setTimeout(() => {
                 document.getElementById('solveTaskModal').classList.add('hidden');
-                loadTasks();
-            }, 2000);
+                // Видаляємо картку зі списку без перезавантаження
+                const card = document.getElementById(`task-card-${currentTask.id}`);
+                if (card) card.remove();
+            }, 1500);
         } else {
             showResult('❌ Неправильно! Спробуй ще раз.', 'error');
         }
@@ -266,37 +174,26 @@ document.getElementById('createTaskBtn').addEventListener('click', () => {
 
 document.getElementById('createTaskForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-
     const title = document.getElementById('taskTitle').value;
     const description = document.getElementById('taskDescription').value;
     const code = document.getElementById('taskCode').value;
     const difficulty = document.getElementById('taskDifficulty').value;
 
     try {
-        await apiCall('POST', '/tasks', {
-            title,
-            description,
-            correctCode: code,
-            difficulty,
-            userId: currentUser.id
-        });
-
+        await apiCall('POST', '/tasks', { title, description, correctCode: code, difficulty, userId: currentUser.id });
         document.getElementById('createTaskForm').reset();
         document.getElementById('createTaskModal').classList.add('hidden');
-        alert('Завдання створено!');
         loadTasks();
     } catch (error) {
         alert('Помилка: ' + error.message);
     }
 });
 
-// Load leaderboard
+// Leaderboard
 async function loadLeaderboard() {
     try {
         const users = await apiCall('GET', '/leaderboard');
-        const leaderboardList = document.getElementById('leaderboardList');
-
-        leaderboardList.innerHTML = users.map((user, index) => `
+        document.getElementById('leaderboardList').innerHTML = users.map((user, index) => `
             <div class="leaderboard-item">
                 <div class="rank">${index + 1}</div>
                 <div class="username">${user.username}</div>
@@ -309,13 +206,32 @@ async function loadLeaderboard() {
     }
 }
 
-// Load profile
+// Profile — з виконаними завданнями
 async function loadProfile() {
     try {
         const user = await apiCall('GET', `/user/${currentUser.id}`);
-        const profileContent = document.getElementById('profileContent');
 
-        profileContent.innerHTML = `
+        // Завантажуємо деталі виконаних завдань
+        let completedTasksHTML = '<p style="color:#999;">Ще немає виконаних завдань</p>';
+        if (completedTaskIds.length > 0) {
+            const allTasks = await apiCall('GET', '/tasks');
+            // tasks API не повертає виконані (вони відфільтровані), тому беремо з /tasks/:id
+            const detailsPromises = completedTaskIds.map(id =>
+                apiCall('GET', `/tasks/${id}`).catch(() => null)
+            );
+            const details = (await Promise.all(detailsPromises)).filter(Boolean);
+
+            if (details.length > 0) {
+                completedTasksHTML = details.map(t => `
+                    <div class="completed-task-item">
+                        <span class="completed-task-title">${t.title}</span>
+                        <span class="task-difficulty difficulty-${t.difficulty}">${t.difficulty}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        document.getElementById('profileContent').innerHTML = `
             <div class="profile-header">
                 <div class="profile-avatar">⚔️</div>
                 <div class="profile-info">
@@ -337,6 +253,10 @@ async function loadProfile() {
                     <div class="profile-stat-label">Завдань Створено</div>
                 </div>
             </div>
+            <div class="completed-tasks-section">
+                <h3>Виконані завдання</h3>
+                <div class="completed-tasks-list">${completedTasksHTML}</div>
+            </div>
         `;
     } catch (error) {
         console.error('Error loading profile:', error);
@@ -346,18 +266,11 @@ async function loadProfile() {
 // Modal controls
 document.querySelectorAll('.close-modal').forEach(btn => {
     btn.addEventListener('click', (e) => {
-        const modal = e.target.closest('.modal');
-        modal.classList.add('hidden');
+        e.target.closest('.modal').classList.add('hidden');
     });
 });
-
 window.addEventListener('click', (e) => {
-    if (e.target.classList.contains('modal')) {
-        e.target.classList.add('hidden');
-    }
+    if (e.target.classList.contains('modal')) e.target.classList.add('hidden');
 });
 
-// Initialize
-if (checkAuth()) {
-    loadTasks();
-}
+if (checkAuth()) loadTasks();

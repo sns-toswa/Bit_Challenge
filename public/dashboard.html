@@ -5,6 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Task Battle - Завдання</title>
     <link rel="stylesheet" href="dashboard.css">
+    <style>
+        .completed-tasks-section {
+            margin-top: 30px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        .completed-tasks-section h3 {
+            font-size: 1.2rem;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .completed-tasks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .completed-task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f0fff4;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+        }
+        .completed-task-title {
+            font-weight: 600;
+            color: #333;
+        }
+    </style>
 </head>
 <body>
 <nav class="navbar">
@@ -12,7 +42,6 @@
         <h1 class="nav-title">⚔️ TASK BATTLE</h1>
         <div class="nav-links">
             <button class="nav-btn active" data-page="tasks">Завдання</button>
-            <button class="nav-btn" data-page="challenges">Виставлені Завдання</button>
             <button class="nav-btn" data-page="leaderboard">Рейтинг</button>
             <button class="nav-btn" data-page="profile">Профіль</button>
             <button class="nav-btn" id="logoutBtn">Вихід</button>
@@ -28,12 +57,6 @@
             <button class="btn btn-secondary" id="createTaskBtn">+ Створити Завдання</button>
         </div>
         <div id="tasksList" class="tasks-list"></div>
-    </div>
-
-    <!-- Challenges Section -->
-    <div id="challengesSection" class="section hidden">
-        <h2>Виставлені Завдання</h2>
-        <div id="challengesList" class="challenges-list"></div>
     </div>
 
     <!-- Leaderboard Section -->
@@ -82,33 +105,6 @@
     </div>
 </div>
 
-<!-- Post Challenge Modal -->
-<div id="postChallengeModal" class="modal hidden">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>Виставити Завдання на Виконання</h2>
-            <button type="button" class="close-modal">&times;</button>
-        </div>
-        <form id="postChallengeForm">
-            <div class="form-group">
-                <label>Виберіть Завдання:</label>
-                <select id="challengeTaskSelect" required>
-                    <option value="">-- Завантаження завдань --</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Опис Виклику (опціонально):</label>
-                <textarea id="challengeDescription" rows="3" placeholder="Напишіть щось про цей виклик..."></textarea>
-            </div>
-            <div class="form-group">
-                <label>Приз за правильне рішення (очки):</label>
-                <input type="number" id="challengePrize" value="10" min="1" max="100">
-            </div>
-            <button type="submit" class="btn btn-primary">Виставити</button>
-        </form>
-    </div>
-</div>
-
 <!-- Solve Task Modal -->
 <div id="solveTaskModal" class="modal hidden">
     <div class="modal-content modal-large">
@@ -128,8 +124,8 @@
                 </div>
                 <textarea id="solutionCode" placeholder="Напиши код тут..."></textarea>
             </div>
-            <div id="resultMessage" class="result-message"></div>
         </div>
+        <div id="resultMessage" class="result-message"></div>
     </div>
 </div>
 
